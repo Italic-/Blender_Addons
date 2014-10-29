@@ -323,11 +323,8 @@ def NormalCons(scene):
 		obj_active.rotation_mode = rot_mode
 		draw_callback_px()
 
-#
-# class to draw relationship line in viewport
-#
 class ModalDrawOperator(bpy.types.Operator):
-	"""Draw a line with the mouse"""
+	"""draw relationship line in viewport"""
 	bl_idname = "view3d.modal_operator"
 	bl_label = "Simple Modal View3D Operator"
 
