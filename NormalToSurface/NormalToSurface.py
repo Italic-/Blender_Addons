@@ -1,9 +1,9 @@
-# Normal To constraint
+# Normal To Surface constraint
 # Copyright (C) 2014  Stan Paillereau
 # ----------------------------------
 
 bl_info = {
-   "name":   "Normal To constraint",
+   "name":   "Normal To Surface constraint",
    "author":   "Stan Paillereau",
    "blender":  (2,7,2),
    "version":  (0,0,1),
