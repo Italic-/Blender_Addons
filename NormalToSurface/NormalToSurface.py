@@ -3,18 +3,10 @@
 # ----------------------------------
 
 '''
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-    
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 
@@ -50,7 +42,7 @@ def avail_meshs(self,context):
 def RemoveCons(objs):
 	'''remove custom properties and reset rotation'''
 	for ob in objs:
-		for p in ["flagEX","meshlist","flagIO","infl","consname","meshname"]:
+		for p in ["flagEX","meshlist","flagIO","infl","consname","meshname","cvec"]:
 			if ob.get(p) is not None:
 				del ob[p]
 		ob.delta_rotation_quaternion = mathutils.Quaternion((1.0,0.0,0.0,0.0))
@@ -58,7 +50,7 @@ def RemoveCons(objs):
 	return {'FINISHED'}
 
 def draw_callback_px(self,context):
-	oblist = [ob for ob in bpy.data.objects if (ob.get('flagEX') is not None)]
+	oblist = [ob for ob in bpy.data.objects if ((ob.get('flagEX') is not None) or (ob.meshname != ""))]
 	for ob in oblist:
 		vec = ob["cvec"]
 		color = list(((bpy.context.user_preferences.themes[0].view_3d.grid)/4 + (bpy.context.user_preferences.themes[0].user_interface.axis_z)/1.5))
@@ -281,21 +273,15 @@ def NormalCons(scene):
 		obj_active = bpy.context.active_object
 		rot_mode = obj_active.rotation_mode
 		pvec = obj_active.matrix_world.to_translation()
-		target = obj_active.meshname
-		if (obj_active.get('meshlist') is not None) and (target != ''):
-			n_list = [str(l[0]) for l in obj_active.meshlist.items()]
-			if (StoreGlobVar.mesh.name not in n_list):
-				createmeshlist(obj_active,bpy.context)
-				obj_active.meshname = StoreGlobVar.mesh.name
-			else:
-				StoreGlobVar.mesh = bpy.data.objects.get(str(target))
-				createmeshlist(obj_active,bpy.context)
-			
-			#calculate the vector normal to the surface
-			result = FuncNormSurface(pvec,target)
-			nvec = result[0]
-			obj_active["cvec"] = result[1]
+		createmeshlist(obj_active,bpy.context)
 		
+		if (obj_active.meshname in [str(l[0]) for l in obj_active.meshlist.items()]) or (obj_active.meshname == ""):
+			StoreGlobVar.mesh = bpy.data.objects.get(str(obj_active.meshname))
+			target = obj_active.meshname
+		else :
+			obj_active.meshname = StoreGlobVar.mesh.name
+			target = obj_active.meshname
+
 		#set Track to and Up axis
 		AXTT = obj_active.track_axis
 		if AXTT[0] == 'N':
@@ -303,25 +289,29 @@ def NormalCons(scene):
 		else:
 			AXTTN = AXTT[4]
 		AXUP = obj_active.up_axis
-		
+			
 		#apply the rotation if there is no error on the constraint panel
-		if (obj_active.track_axis[4] == obj_active.up_axis) or (target == ''):
+		if (obj_active.track_axis[4] == obj_active.up_axis) or (target == '') or (obj_active.flagIO == False):
+			error = 0.0
 			nrot = mathutils.Quaternion((1.0,0.0,0.0,0.0))
 		else:
+			#calculate the vector normal to the surface
+			result = FuncNormSurface(pvec,target)
+			nvec = result[0]
+			obj_active["cvec"] = result[1]
 			
 			#calculate the rotation (and substract the local rotation) to apply to the object
 			obj_active.rotation_mode = 'QUATERNION'
 			obj_rot = obj_active.rotation_quaternion
 			nrot_quat = nvec.to_track_quat(AXTTN,AXUP)
 			nrot = nrot_quat*obj_rot.inverted()
-			
+				
 			#apply the rotation
 			error = 1.0
-			nrot = nrot.slerp(obj_rot,(1-obj_active.infl*obj_active.flagIO*error))
+			nrot = nrot.slerp(obj_rot,(1-obj_active.infl*error))
 		obj_active.delta_rotation_quaternion = nrot
 		obj_active.delta_rotation_euler = nrot.to_euler(rot_mode)
 		obj_active.rotation_mode = rot_mode
-		draw_callback_px()
 
 class ModalDrawOperator(bpy.types.Operator):
 	"""draw relationship line in viewport"""
