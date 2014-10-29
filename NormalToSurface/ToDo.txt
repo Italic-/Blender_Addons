@@ -1,0 +1,1 @@
+To do :- fix bugs- fix “reset” when deleting the add-on- add support for bones- improve normal vector calculation using lerp and vertex normals- general optimization
