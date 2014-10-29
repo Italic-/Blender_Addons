@@ -91,7 +91,7 @@ def DeclMesh(scene):
 
 class CreateNormalToConsPanel(bpy.types.Panel):
 	'''draw panel/buttons in the tool panel to add/remove the constraint'''
-	bl_label = "Create Normal To constraint"
+	bl_label = "Create Normal To Surface constraint"
 	bl_idname = "create_normto_cons_pan"
 	bl_space_type = 'VIEW_3D'
 	bl_region_type = 'TOOLS'
@@ -109,7 +109,7 @@ class CreateNormalToConsPanel(bpy.types.Panel):
 class NORMTOCONS_ADD_Button(bpy.types.Operator):
 	'''create constraint'''
 	bl_idname = "object.add_cons"
-	bl_label = "Add Normal To constraint"
+	bl_label = "Add Normal To Surface constraint"
 	bl_options = {'UNDO', 'REGISTER'}
 	
 	@classmethod
@@ -159,7 +159,7 @@ class NORMTOCONS_ADD_Button(bpy.types.Operator):
 
 class NormalToConsPanel(bpy.types.Panel):
 	'''draw constraint UI panel'''
-	bl_label = "Custom Constraint"
+	bl_label = "Custom Constraints"
 	bl_idname = "normto_cons_pan"
 	bl_space_type = 'VIEW_3D'
 	bl_region_type = 'UI'
@@ -214,7 +214,7 @@ class NormalToConsPanel(bpy.types.Panel):
 class NORMTOCONS_REM_Button(bpy.types.Operator):
 	'''define remove constraint button'''
 	bl_idname = "object.rem_cons"
-	bl_label = "Remove Normal To constraint"
+	bl_label = "Remove Normal To Surface constraint"
 	bl_description = "Remove constraint"
 	bl_options = {'UNDO', 'REGISTER'}
 	
