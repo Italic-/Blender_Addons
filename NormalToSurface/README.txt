@@ -7,5 +7,6 @@ Installation is standard like any other Blender addon.
 To add/remove the constraint, go to the “Relations” tab > “Create Normal To Surface constraint”
 The constraint can be changed in the UI panel > “Custom Constraints”
 
-Documentation is in progress.
+http://spailler.prosite.com/215294/4785873/3d-work/ntsc-script
+
 Please, read the ToDo.txt to find the limitations and the improvement in WIP.
