@@ -1,6 +1,7 @@
 To do :
 - fix bugs
 - fix 'reset' when deleting the add-on
+- fix relationship line still visible when deleting target
 - add support for bones
 - take into account the rotation mode : Axis angle
 - improve normal vector calculation using lerp and vertex normals
