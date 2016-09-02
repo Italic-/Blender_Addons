@@ -31,7 +31,6 @@ import bpy
 import mathutils
 import math
 import bgl
-import blf
 from bpy.app.handlers import persistent
 
 
