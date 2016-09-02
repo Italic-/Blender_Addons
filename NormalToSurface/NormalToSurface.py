@@ -113,9 +113,9 @@ def FuncNormSurface(pvec, objName):
 
     # find closest point on mesh
     cveclist = obj.closest_point_on_mesh(pvec_loc, 1.84467e+19)
-    cvec = obj.matrix_world * cveclist[0]
-    nvecf = cveclist[1]
-    f_ind = cveclist[2]
+    cvec = obj.matrix_world * cveclist[1]
+    nvecf = cveclist[2]
+    f_ind = cveclist[3]
     f_loc = obj.matrix_world * faces[f_ind].center
 
     # set variables for the search of the closest
@@ -150,7 +150,8 @@ def FuncNormSurface(pvec, objName):
 @persistent
 def NormalCons(scene):
     '''recalculate the normal when scene updates'''
-    if (bpy.context.active_object.get('flagEX') is not None):
+    if (bpy.context.active_object) and \
+            (bpy.context.active_object.get('flagEX') is not None):
         # set variables
         obj_active = bpy.context.active_object
         rot_mode = obj_active.rotation_mode
