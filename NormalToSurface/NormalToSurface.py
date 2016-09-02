@@ -4,19 +4,25 @@
 # ----------------------------------
 
 '''
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 
 bl_info = {
     "name": "Normal To Surface constraint",
     "author": "Stan Paillereau",
-    "blender": (2, 7, 2),
-    "version": (0, 0, 1),
-    "location": "View3D > Tool panel > Create Normal To Constraint and View3D > UI panel > Custom Constraint",
+    "blender": (2, 7, 7),
+    "version": (0, 0, 2),
+    "location": "View3D > Tool panel > Create Normal To Constraint and View3D "
+    "> UI panel > Custom Constraint",
     "description": "Add a normal to surface constraint to selected object",
     "category": "Object"
 }
@@ -39,7 +45,11 @@ def createmeshlist(ob, context):
 def avail_meshs(self, context):
     '''create list of object of type 'MESH' to select when executing operator'''
     obj_active = bpy.context.active_object
-    meshs = [(str(i), x.name, x.name) for i, x in enumerate(bpy.data.objects) if x.type == 'MESH' and x != obj_active]
+    meshs = [
+        (str(i), x.name, x.name)
+        for i, x in enumerate(bpy.data.objects)
+        if x.type == 'MESH' and x != obj_active
+    ]
     return meshs
 
 
@@ -55,10 +65,16 @@ def RemoveCons(objs):
 
 
 def draw_callback_px(self, context):
-    oblist = [ob for ob in bpy.data.objects if ((ob.get('flagEX') is not None) or (ob.meshname != ""))]
+    oblist = [
+        ob for ob in bpy.data.objects
+        if ((ob.get('flagEX') is not None) or (ob.meshname != ""))
+    ]
     for ob in oblist:
         vec = ob["cvec"]
-        color = list(((bpy.context.user_preferences.themes[0].view_3d.grid) / 4 + (bpy.context.user_preferences.themes[0].user_interface.axis_z) / 1.5))
+        color = list(
+            ((bpy.context.user_preferences.themes[0].view_3d.grid) / 4 +
+             (bpy.context.user_preferences.themes[0].user_interface.axis_z) / 1.5)
+        )
         color.append(1.0)
 
         bgl.glEnable(bgl.GL_LINE_STIPPLE)
@@ -122,12 +138,23 @@ class NORMTOCONS_ADD_Button(bpy.types.Operator):
         return poll_v
 
     # declare variables
-    bpy.types.Object.meshlist = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
+    bpy.types.Object.meshlist = bpy.props.CollectionProperty(
+        type=bpy.types.PropertyGroup
+    )
     bpy.types.Object.meshname = bpy.props.StringProperty()
-    bpy.types.Object.flagEX = bpy.props.BoolProperty(default=False)
-    bpy.types.Object.flagIO = bpy.props.BoolProperty(default=True, description="Enable/Disable Constraint")
-    bpy.types.Object.infl = bpy.props.FloatProperty(min=0.000, max=1.000, default=1.000, description="Amount of influence constraint will have on the final solution")
-    bpy.types.Object.consname = bpy.props.StringProperty(default="Normal To", description="Constraint name")
+    bpy.types.Object.flagEX = bpy.props.BoolProperty(
+        default=False
+    )
+    bpy.types.Object.flagIO = bpy.props.BoolProperty(
+        default=True, description="Enable/Disable Constraint"
+    )
+    bpy.types.Object.infl = bpy.props.FloatProperty(
+        min=0.000, max=1.000, default=1.000,
+        description="Amount of influence constraint will have on the final solution"
+    )
+    bpy.types.Object.consname = bpy.props.StringProperty(
+        default="Normal To", description="Constraint name"
+    )
 
     def execute(self, context):
         '''create/set custom properties default values'''
@@ -145,7 +172,7 @@ class NORMTOCONS_ADD_Button(bpy.types.Operator):
         obj_active.track_axis = 'POS_Y'
         obj_active.up_axis = 'Z'
         obj_active.rotation_mode = rot_mode
-        self.report({'INFO'}, "Constraint created")  # print 'Constraint created' in the info header
+        self.report({'INFO'}, "Constraint created")
         for area in bpy.context.screen.areas:
             if area.type == 'VIEW_3D':
                 bpy.ops.view3d.modal_operator({'area': area}, 'INVOKE_DEFAULT')
@@ -178,7 +205,7 @@ class NormalToConsPanel(bpy.types.Panel):
         # set variables
         layout = self.layout
         obj_active = bpy.context.active_object
-        if obj_active.flagIO == True:  # set the icon for the enable/disable eye button
+        if obj_active.flagIO == True:  # icon for the enable/disable eye button
             con = 'VISIBLE_IPO_ON'
         else:
             con = 'VISIBLE_IPO_OFF'
@@ -190,7 +217,9 @@ class NormalToConsPanel(bpy.types.Panel):
         AXTT = obj_active.track_axis
         AXUP = obj_active.up_axis
         if (AXTT[4] == AXUP) or (obj_active.meshname == ""):
-            row.alert = True  # draw alert constraint name if track axis and up axis are equal or if target is missing
+            # draw alert constraint name if track axis and
+            # up axis are equal or if target is missing
+            row.alert = True  
         row.prop(obj_active, 'consname', text="")
         row.alert = False
         row.prop(obj_active, 'flagIO', icon=con, icon_only=True, emboss=False)
@@ -198,7 +227,10 @@ class NormalToConsPanel(bpy.types.Panel):
 
         # draw 2nd row (target)
         row = box.row()
-        row.prop_search(obj_active, "meshname", obj_active, "meshlist", text="Target", icon='OBJECT_DATA')
+        row.prop_search(
+            obj_active, "meshname", obj_active, "meshlist",
+            text="Target", icon='OBJECT_DATA'
+        )
         row = box.row(align=True)
 
         # draw 3rd row (track to axis)
@@ -231,7 +263,7 @@ class NORMTOCONS_REM_Button(bpy.types.Operator):
         '''delete custom properties and reset rotation'''
         objs = bpy.context.selected_objects
         RemoveCons(objs)
-        self.report({'INFO'}, "Constraint removed")  # print 'Constraint removed' in the info header
+        self.report({'INFO'}, "Constraint removed")
         return {'FINISHED'}
 
 
@@ -254,11 +286,13 @@ def FuncNormSurface(pvec, objName):
     f_ind = cveclist[2]
     f_loc = obj.matrix_world * faces[f_ind].center
 
-    # set variables for the search of the closest vertex to the object (not use yet)
+    # set variables for the search of the closest
+    # vertex to the object (not use yet)
     v_ind = faces[f_ind].vertices
     verts = obj.data.vertices
 
-    # find the closest vertex (part of the closest face) to the object and store in a list (not use yet)
+    # find the closest vertex (part of the closest face) to
+    # the object and store in a list (not use yet)
     for v in range(0, faces[f_ind].loop_total):
         vloc = obj.matrix_world * verts[v_ind[v]].co
         dist = (cvec - vloc).length
@@ -270,7 +304,8 @@ def FuncNormSurface(pvec, objName):
             miniindv[0] = miniindv[0]
             minidistv[0] = minidistv[0]
 
-    # calculate the average normal (vector normal to the surface) and return the result
+    # calculate the average normal (vector normal to
+    # the surface) and return the result
     v_loc = obj.matrix_world * verts[miniindv[0]].co
     geom = mathutils.geometry.intersect_point_line(cvec, f_loc, v_loc)
     coef = geom[1]
@@ -289,8 +324,10 @@ def NormalCons(scene):
         rot_mode = obj_active.rotation_mode
         pvec = obj_active.matrix_world.to_translation()
         createmeshlist(obj_active, bpy.context)
+        
+        mshlst = [str(l[0]) for l in obj_active.meshlist.items()]
 
-        if (obj_active.meshname in [str(l[0]) for l in obj_active.meshlist.items()]) or (obj_active.meshname == ""):
+        if (obj_active.meshname in mshlst) or (obj_active.meshname == ""):
             StoreGlobVar.mesh = bpy.data.objects.get(str(obj_active.meshname))
             target = obj_active.meshname
         else:
@@ -306,7 +343,9 @@ def NormalCons(scene):
         AXUP = obj_active.up_axis
 
         # apply the rotation if there is no error on the constraint panel
-        if (obj_active.track_axis[4] == obj_active.up_axis) or (target == '') or (obj_active.flagIO == False):
+        if (obj_active.track_axis[4] == obj_active.up_axis) or \
+                (target == '') or \
+                (obj_active.flagIO == False):
             error = 0.0
             nrot = mathutils.Quaternion((1.0, 0.0, 0.0, 0.0))
         else:
@@ -315,7 +354,8 @@ def NormalCons(scene):
             nvec = result[0]
             obj_active["cvec"] = result[1]
 
-            # calculate the rotation (and substract the local rotation) to apply to the object
+            # calculate the rotation (and substract the
+            # local rotation) to apply to the object
             obj_active.rotation_mode = 'QUATERNION'
             obj_rot = obj_active.rotation_quaternion
             nrot_quat = nvec.to_track_quat(AXTTN, AXUP)
@@ -337,17 +377,15 @@ class ModalDrawOperator(bpy.types.Operator):
     def invoke(self, context, event):
         if context.area.type == 'VIEW_3D':
             args = (self, context)
-            self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_px, args, 'WINDOW', 'POST_VIEW')
+            self._handle = bpy.types.SpaceView3D.draw_handler_add(
+                draw_callback_px, args, 'WINDOW', 'POST_VIEW'
+            )
             self.mouse_path = []
             context.window_manager.modal_handler_add(self)
             return {'RUNNING_MODAL'}
         else:
             self.report({'WARNING'}, "View3D not found, cannot run operator")
             return {'CANCELLED'}
-
-#
-#   Registration
-#
 
 
 def register():
