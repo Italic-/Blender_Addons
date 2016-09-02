@@ -73,8 +73,8 @@ def draw_callback_px(self, context):
     for ob in oblist:
         vec = ob["cvec"]
         color = list(
-            ((bpy.context.user_preferences.themes[0].view_3d.grid) / 4 +
-             (bpy.context.user_preferences.themes[0].user_interface.axis_z) / 1.5)
+            ((context.user_preferences.themes[0].view_3d.grid) / 4 +
+             (context.user_preferences.themes[0].user_interface.axis_z) / 1.5)
         )
         color.append(1.0)
 
@@ -210,9 +210,13 @@ class CreateNormalToConsPanel(bpy.types.Panel):
     '''draw panel/buttons in the tool panel to add/remove the constraint'''
     bl_label = "Create Normal To Surface constraint"
     bl_idname = "create_normto_cons_pan"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
-    bl_category = "Relations"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "constraint"
+    
+    @classmethod
+    def poll(cls, context):
+        return (context.object)
 
     def draw(self, context):
         layout = self.layout
@@ -222,6 +226,65 @@ class CreateNormalToConsPanel(bpy.types.Panel):
         row.alignment = 'EXPAND'
         row.operator("object.add_cons", text="Add")
         row.operator("object.rem_cons", text="Remove")
+
+
+class NormalToConsPanel(bpy.types.Panel):
+    '''draw constraint UI panel'''
+    bl_label = "Custom Constraints"
+    bl_idname = "normto_cons_pan"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "constraint"
+
+    @classmethod
+    def poll(cls, context):
+        '''poll to draw the panel'''
+        obj_active = context.active_object
+        return (obj_active.get('flagEX') is not None)
+
+    def draw(self, context):
+        # set variables
+        layout = self.layout
+        obj_active = context.active_object
+        if obj_active.flagIO == True:  # icon for the enable/disable eye button
+            con = 'VISIBLE_IPO_ON'
+        else:
+            con = 'VISIBLE_IPO_OFF'
+        box = layout.box()
+        row = box.row()
+
+        # draw 1st row (Constraint name / enable/disable button / delete constraint button)
+        row.label(text="Normal To")
+        AXTT = obj_active.track_axis
+        AXUP = obj_active.up_axis
+        if (AXTT[4] == AXUP) or (obj_active.meshname == ""):
+            # draw alert constraint name if track axis and
+            # up axis are equal or if target is missing
+            row.alert = True  
+        row.prop(obj_active, 'consname', text="")
+        row.alert = False
+        row.prop(obj_active, 'flagIO', icon=con, icon_only=True, emboss=False)
+        row.operator("object.rem_cons", text="", icon='X', emboss=False)
+
+        # draw 2nd row (target)
+        row = box.row()
+        row.prop_search(
+            obj_active, "meshname", obj_active, "meshlist",
+            text="Target", icon='OBJECT_DATA'
+        )
+        row = box.row(align=True)
+
+        # draw 3rd row (track to axis)
+        row.label(text="To:")
+        row.prop(obj_active, "track_axis", expand=True)
+
+        # draw 4th row (up axis)
+        row = box.row()
+        row.prop(obj_active, "up_axis", text="Up")
+
+        # draw 5th row (influence slider)
+        row = box.row()
+        row.prop(obj_active, 'infl', slider=True, text="Influence")
 
 
 class NORMTOCONS_ADD_Button(bpy.types.Operator):
@@ -287,66 +350,6 @@ class NORMTOCONS_ADD_Button(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class NormalToConsPanel(bpy.types.Panel):
-    '''draw constraint UI panel'''
-    bl_label = "Custom Constraints"
-    bl_idname = "normto_cons_pan"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_context = "object"
-
-    @classmethod
-    def poll(cls, context):
-        '''poll to draw the panel'''
-        obj_active = bpy.context.active_object
-        return (obj_active.get('flagEX') is not None)
-
-    def draw(self, context):
-
-        # set variables
-        layout = self.layout
-        obj_active = bpy.context.active_object
-        if obj_active.flagIO == True:  # icon for the enable/disable eye button
-            con = 'VISIBLE_IPO_ON'
-        else:
-            con = 'VISIBLE_IPO_OFF'
-        box = layout.box()
-        row = box.row()
-
-        # draw 1st row (Constraint name / enable/disable button / delete constraint button)
-        row.label(text="Normal To")
-        AXTT = obj_active.track_axis
-        AXUP = obj_active.up_axis
-        if (AXTT[4] == AXUP) or (obj_active.meshname == ""):
-            # draw alert constraint name if track axis and
-            # up axis are equal or if target is missing
-            row.alert = True  
-        row.prop(obj_active, 'consname', text="")
-        row.alert = False
-        row.prop(obj_active, 'flagIO', icon=con, icon_only=True, emboss=False)
-        row.operator("object.rem_cons", text="", icon='X', emboss=False)
-
-        # draw 2nd row (target)
-        row = box.row()
-        row.prop_search(
-            obj_active, "meshname", obj_active, "meshlist",
-            text="Target", icon='OBJECT_DATA'
-        )
-        row = box.row(align=True)
-
-        # draw 3rd row (track to axis)
-        row.label(text="To:")
-        row.prop(obj_active, "track_axis", expand=True)
-
-        # draw 4th row (up axis)
-        row = box.row()
-        row.prop(obj_active, "up_axis", text="Up")
-
-        # draw 5th row (influence slider)
-        row = box.row()
-        row.prop(obj_active, 'infl', slider=True, text="Influence")
-
-
 class NORMTOCONS_REM_Button(bpy.types.Operator):
     '''define remove constraint button'''
     bl_idname = "object.rem_cons"
@@ -357,12 +360,12 @@ class NORMTOCONS_REM_Button(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         '''poll to activate/desactivate button'''
-        ob = bpy.context.active_object
+        ob = context.active_object
         return (ob.get('flagEX') is not None)
 
     def execute(self, context):
         '''delete custom properties and reset rotation'''
-        objs = bpy.context.selected_objects
+        objs = context.selected_objects
         RemoveCons(objs)
         self.report({'INFO'}, "Constraint removed")
         return {'FINISHED'}
