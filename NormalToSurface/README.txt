@@ -4,8 +4,8 @@ The normal to surface constraint is an addon for Blender that calculates the nor
 This tool simulates the blender UI to change the target, change the track and up axis, toggle enable/disable and control the influence of the constraint.
 
 Installation is standard like any other Blender addon.
-To add/remove the constraint, go to the “Relations” tab > “Create Normal To Surface constraint”
-The constraint can be changed in the UI panel > “Custom Constraints”
+To add/remove the constraint, go to the constraint properties > “Create Normal To Surface constraint”
+The constraint can be changed in the constraint properties.
 
 http://spailler.prosite.com/215294/4785873/3d-work/ntsc-script
 
