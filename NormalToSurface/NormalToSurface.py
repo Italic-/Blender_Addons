@@ -35,18 +35,17 @@ import blf
 from bpy.app.handlers import persistent
 
 
-
 def createmeshlist(ob, context):
     '''create list of object of type 'MESH' to select in UI panel'''
     ob.meshlist.clear()
-    for c in bpy.context.scene.objects:
+    for c in context.scene.objects:
         if c.type == 'MESH' and c != ob:
             ob.meshlist.add().name = c.name
 
 
 def avail_meshs(self, context):
     '''create list of object of type 'MESH' to select when executing operator'''
-    obj_active = bpy.context.active_object
+    obj_active = context.active_object
     meshs = [
         (str(i), x.name, x.name)
         for i, x in enumerate(bpy.data.objects)
@@ -234,8 +233,8 @@ class NORMTOCONS_ADD_Button(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         '''poll to activate/desactivate button'''
-        obj_active = bpy.context.active_object
-        objs_sel = [o for o in bpy.context.selected_objects]
+        obj_active = context.active_object
+        objs_sel = [o for o in context.selected_objects]
         poll_v = (obj_active.get('flagEX') is None) and (len(objs_sel) == 1)
         return poll_v
 
@@ -260,7 +259,7 @@ class NORMTOCONS_ADD_Button(bpy.types.Operator):
 
     def execute(self, context):
         '''create/set custom properties default values'''
-        obj_active = bpy.context.active_object
+        obj_active = context.active_object
         rot_mode = obj_active.rotation_mode
 
         obj_active.rotation_mode = "QUATERNION"
@@ -275,7 +274,7 @@ class NORMTOCONS_ADD_Button(bpy.types.Operator):
         obj_active.up_axis = 'Z'
         obj_active.rotation_mode = rot_mode
         self.report({'INFO'}, "Constraint created")
-        for area in bpy.context.screen.areas:
+        for area in context.screen.areas:
             if area.type == 'VIEW_3D':
                 bpy.ops.view3d.modal_operator({'area': area}, 'INVOKE_DEFAULT')
                 break
