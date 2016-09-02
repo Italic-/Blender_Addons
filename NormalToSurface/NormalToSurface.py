@@ -29,9 +29,11 @@ bl_info = {
 
 import bpy
 import mathutils
-from bpy.app.handlers import persistent
+import math
 import bgl
 import blf
+from bpy.app.handlers import persistent
+
 
 
 def createmeshlist(ob, context):
@@ -92,17 +94,116 @@ def draw_callback_px(self, context):
         bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
 
 
-class StoreGlobVar:
-    '''help store global variable'''
-    pass
-
-
 @persistent
 def DeclMesh(scene):
     '''declare variable mesh when loading file'''
     obj_active = bpy.context.active_object
     StoreGlobVar.mesh = bpy.data.objects.get(str(obj_active.meshname))
     return {'FINISHED'}
+
+
+def FuncNormSurface(pvec, objName):
+    '''caclulate the vector normal to the surface'''
+    # set variables
+    obj = bpy.data.objects[objName]
+    faces = obj.data.polygons
+    miniindv = [0]
+    minidistv = [1000000.0]
+    pvec_loc = pvec - obj.matrix_world.decompose()[0]
+
+    # find closest point on mesh
+    cveclist = obj.closest_point_on_mesh(pvec_loc, 1.84467e+19)
+    cvec = obj.matrix_world * cveclist[0]
+    nvecf = cveclist[1]
+    f_ind = cveclist[2]
+    f_loc = obj.matrix_world * faces[f_ind].center
+
+    # set variables for the search of the closest
+    # vertex to the object (not use yet)
+    v_ind = faces[f_ind].vertices
+    verts = obj.data.vertices
+
+    # find the closest vertex (part of the closest face) to
+    # the object and store in a list (not use yet)
+    for v in range(0, faces[f_ind].loop_total):
+        vloc = obj.matrix_world * verts[v_ind[v]].co
+        dist = (cvec - vloc).length
+        if dist < minidistv[0]:
+            miniindv[0] = v_ind[v]
+            minidistv[0] = dist
+
+        else:
+            miniindv[0] = miniindv[0]
+            minidistv[0] = minidistv[0]
+
+    # calculate the average normal (vector normal to
+    # the surface) and return the result
+    v_loc = obj.matrix_world * verts[miniindv[0]].co
+    geom = mathutils.geometry.intersect_point_line(cvec, f_loc, v_loc)
+    coef = geom[1]
+    nvecv = verts[miniindv[0]].normal
+    nvec = nvecf  # .lerp(nvecv,coef) to improve later
+    result = [nvec, cvec]
+    return (result)
+
+
+@persistent
+def NormalCons(scene):
+    '''recalculate the normal when scene updates'''
+    if (bpy.context.active_object.get('flagEX') is not None):
+        # set variables
+        obj_active = bpy.context.active_object
+        rot_mode = obj_active.rotation_mode
+        pvec = obj_active.matrix_world.to_translation()
+        createmeshlist(obj_active, bpy.context)
+        
+        mshlst = [str(l[0]) for l in obj_active.meshlist.items()]
+
+        if (obj_active.meshname in mshlst) or (obj_active.meshname == ""):
+            StoreGlobVar.mesh = bpy.data.objects.get(str(obj_active.meshname))
+            target = obj_active.meshname
+        else:
+            obj_active.meshname = StoreGlobVar.mesh.name
+            target = obj_active.meshname
+
+        # set Track to and Up axis
+        AXTT = obj_active.track_axis
+        if AXTT[0] == 'N':
+            AXTTN = '-' + AXTT[4]
+        else:
+            AXTTN = AXTT[4]
+        AXUP = obj_active.up_axis
+
+        # apply the rotation if there is no error on the constraint panel
+        if (obj_active.track_axis[4] == obj_active.up_axis) or \
+                (target == '') or \
+                (obj_active.flagIO == False):
+            error = 0.0
+            nrot = mathutils.Quaternion((1.0, 0.0, 0.0, 0.0))
+        else:
+            # calculate the vector normal to the surface
+            result = FuncNormSurface(pvec, target)
+            nvec = result[0]
+            obj_active["cvec"] = result[1]
+
+            # calculate the rotation (and substract the
+            # local rotation) to apply to the object
+            obj_active.rotation_mode = 'QUATERNION'
+            obj_rot = obj_active.rotation_quaternion
+            nrot_quat = nvec.to_track_quat(AXTTN, AXUP)
+            nrot = nrot_quat * obj_rot.inverted()
+
+            # apply the rotation
+            error = 1.0
+            nrot = nrot.slerp(obj_rot, (1 - obj_active.infl * error))
+        obj_active.delta_rotation_quaternion = nrot
+        obj_active.delta_rotation_euler = nrot.to_euler(rot_mode)
+        obj_active.rotation_mode = rot_mode
+
+
+class StoreGlobVar:
+    '''help store global variable'''
+    pass
 
 
 class CreateNormalToConsPanel(bpy.types.Panel):
@@ -265,108 +366,6 @@ class NORMTOCONS_REM_Button(bpy.types.Operator):
         RemoveCons(objs)
         self.report({'INFO'}, "Constraint removed")
         return {'FINISHED'}
-
-
-def FuncNormSurface(pvec, objName):
-    '''caclulate the vector normal to the surface'''
-    import bpy
-    import mathutils
-    import math
-    # set variables
-    obj = bpy.data.objects[objName]
-    faces = obj.data.polygons
-    miniindv = [0]
-    minidistv = [1000000.0]
-    pvec_loc = pvec - obj.matrix_world.decompose()[0]
-
-    # find closest point on mesh
-    cveclist = obj.closest_point_on_mesh(pvec_loc, 1.84467e+19)
-    cvec = obj.matrix_world * cveclist[0]
-    nvecf = cveclist[1]
-    f_ind = cveclist[2]
-    f_loc = obj.matrix_world * faces[f_ind].center
-
-    # set variables for the search of the closest
-    # vertex to the object (not use yet)
-    v_ind = faces[f_ind].vertices
-    verts = obj.data.vertices
-
-    # find the closest vertex (part of the closest face) to
-    # the object and store in a list (not use yet)
-    for v in range(0, faces[f_ind].loop_total):
-        vloc = obj.matrix_world * verts[v_ind[v]].co
-        dist = (cvec - vloc).length
-        if dist < minidistv[0]:
-            miniindv[0] = v_ind[v]
-            minidistv[0] = dist
-
-        else:
-            miniindv[0] = miniindv[0]
-            minidistv[0] = minidistv[0]
-
-    # calculate the average normal (vector normal to
-    # the surface) and return the result
-    v_loc = obj.matrix_world * verts[miniindv[0]].co
-    geom = mathutils.geometry.intersect_point_line(cvec, f_loc, v_loc)
-    coef = geom[1]
-    nvecv = verts[miniindv[0]].normal
-    nvec = nvecf  # .lerp(nvecv,coef) to improve later
-    result = [nvec, cvec]
-    return (result)
-
-
-@persistent
-def NormalCons(scene):
-    '''recalculate the normal when scene updates'''
-    if (bpy.context.active_object.get('flagEX') is not None):
-        # set variables
-        obj_active = bpy.context.active_object
-        rot_mode = obj_active.rotation_mode
-        pvec = obj_active.matrix_world.to_translation()
-        createmeshlist(obj_active, bpy.context)
-        
-        mshlst = [str(l[0]) for l in obj_active.meshlist.items()]
-
-        if (obj_active.meshname in mshlst) or (obj_active.meshname == ""):
-            StoreGlobVar.mesh = bpy.data.objects.get(str(obj_active.meshname))
-            target = obj_active.meshname
-        else:
-            obj_active.meshname = StoreGlobVar.mesh.name
-            target = obj_active.meshname
-
-        # set Track to and Up axis
-        AXTT = obj_active.track_axis
-        if AXTT[0] == 'N':
-            AXTTN = '-' + AXTT[4]
-        else:
-            AXTTN = AXTT[4]
-        AXUP = obj_active.up_axis
-
-        # apply the rotation if there is no error on the constraint panel
-        if (obj_active.track_axis[4] == obj_active.up_axis) or \
-                (target == '') or \
-                (obj_active.flagIO == False):
-            error = 0.0
-            nrot = mathutils.Quaternion((1.0, 0.0, 0.0, 0.0))
-        else:
-            # calculate the vector normal to the surface
-            result = FuncNormSurface(pvec, target)
-            nvec = result[0]
-            obj_active["cvec"] = result[1]
-
-            # calculate the rotation (and substract the
-            # local rotation) to apply to the object
-            obj_active.rotation_mode = 'QUATERNION'
-            obj_rot = obj_active.rotation_quaternion
-            nrot_quat = nvec.to_track_quat(AXTTN, AXUP)
-            nrot = nrot_quat * obj_rot.inverted()
-
-            # apply the rotation
-            error = 1.0
-            nrot = nrot.slerp(obj_rot, (1 - obj_active.infl * error))
-        obj_active.delta_rotation_quaternion = nrot
-        obj_active.delta_rotation_euler = nrot.to_euler(rot_mode)
-        obj_active.rotation_mode = rot_mode
 
 
 class ModalDrawOperator(bpy.types.Operator):
