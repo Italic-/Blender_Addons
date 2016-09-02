@@ -156,7 +156,7 @@ def NormalCons(scene):
         rot_mode = obj_active.rotation_mode
         pvec = obj_active.matrix_world.to_translation()
         createmeshlist(obj_active, bpy.context)
-        
+
         mshlst = [str(l[0]) for l in obj_active.meshlist.items()]
 
         if (obj_active.meshname in mshlst) or (obj_active.meshname == ""):
@@ -213,7 +213,7 @@ class CreateNormalToConsPanel(bpy.types.Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "constraint"
-    
+
     @classmethod
     def poll(cls, context):
         return (context.object)
@@ -260,7 +260,7 @@ class NormalToConsPanel(bpy.types.Panel):
         if (AXTT[4] == AXUP) or (obj_active.meshname == ""):
             # draw alert constraint name if track axis and
             # up axis are equal or if target is missing
-            row.alert = True  
+            row.alert = True
         row.prop(obj_active, 'consname', text="")
         row.alert = False
         row.prop(obj_active, 'flagIO', icon=con, icon_only=True, emboss=False)
